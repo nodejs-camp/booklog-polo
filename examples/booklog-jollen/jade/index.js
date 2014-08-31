@@ -22,6 +22,11 @@ app.set('views', __dirname + '/views');
 // (although you can still mix and match)
 app.set('view engine', 'jade');
 
+<<<<<<< HEAD:examples/booklog-jollen/jade/index.js
+=======
+var posts = [];
+
+>>>>>>> 2775054... remove unnecessary:examples/booklog-leon/index.js
 function User(name, email) {
   this.name = name;
   this.email = email;

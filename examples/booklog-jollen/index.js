@@ -22,10 +22,22 @@ app.set('views', __dirname + '/views');
 // (although you can still mix and match)
 app.set('view engine', 'jade');
 
-var posts = [];
+var posts = [{
+	subject: "Hello",
+	content: "Hi !"
+},{
+	subject: "World",
+	content: "Hi !"
+}];
 
 app.get('/welcome', function(req, res) {
 	res.render('index');
+});
+
+app.get('/post', function(req, res) {
+	res.render('post', {
+		posts: posts
+	});
 });
 
 app.get('/1/post', function(req, res) {

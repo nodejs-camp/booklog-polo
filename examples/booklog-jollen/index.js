@@ -30,8 +30,57 @@ var posts = [{
 	content: "Hi !"
 }];
 
+app.all('*', function(req, res, next){
+  if (!req.get('Origin')) return next();
+  // use "*" here to accept any origin
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'PUT');
+  res.set('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type');
+  // res.set('Access-Control-Allow-Max-Age', 3600);
+  if ('OPTIONS' == req.method) return res.send(200);
+  next();
+});
+
 app.get('/welcome', function(req, res) {
 	res.render('index');
+});
+
+app.get('/download', function(req, res) {
+	var events = require('events');
+	var workflow = new events.EventEmitter();
+
+	workflow.outcome = {
+		success: false,
+	};
+
+	workflow.on('vaidate', function() {
+		var password = req.query.password;
+
+		if (password === '123456') {
+			return workflow.emit('success');
+		}
+
+		return workflow.emit('error');
+	});
+
+	workflow.on('success', function() {
+		workflow.outcome.success = true;
+		workflow.outcome.redirect = { 
+			url: '/welcome'
+		};
+		workflow.emit('response');
+	});
+
+	workflow.on('error', function() {
+		workflow.outcome.success = false;
+		workflow.emit('response');
+	});
+
+	workflow.on('response', function() {
+		return res.send(workflow.outcome);
+	});
+
+	return workflow.emit('vaidate');
 });
 
 app.get('/post', function(req, res) {
@@ -41,7 +90,7 @@ app.get('/post', function(req, res) {
 });
 
 app.get('/1/post', function(req, res) {
-	res.send(posts);
+	res.send({posts: posts});
 });
 
 app.post('/1/post', function(req, res) {

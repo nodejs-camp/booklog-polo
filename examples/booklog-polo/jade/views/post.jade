@@ -1,0 +1,14 @@
+extend layout
+
+block content
+	ul
+		each Item in post
+			li: =Item.subject
+				ul
+				each Item2 in Item.content
+						li: =Item2
+
+
+			
+				
+		

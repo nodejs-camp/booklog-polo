@@ -26,7 +26,13 @@ var postSchema = new mongoose.Schema({ //宣告Schema
     subject: { type: String, default: ''},
     content: String
 });
-
+var userSchema = new mongoose.Schema({
+    username: { type: String, unique: true },
+    displayName: { type: String, unique: true },
+    email: { type: String, unique: true },
+    timeCreated: { type: Date, default: Date.now },
+    facebook: {}
+});
 app.db = {//宣告 model
 	posts: mongoose.model('Post', postSchema)//宣告postSchema為‘Post’如果Schema為Post 的話 collections 就要為	posts
 };
@@ -50,15 +56,12 @@ var passport = require('passport')
   , FacebookStrategy = require('passport-facebook').Strategy;
 
 passport.use(new FacebookStrategy({
-    clientID:257942504414864,
-    clientSecret:8515ca40ec40b58d30e974c8cf2c9f3b,
+    clientID:'257942504414864',
+    clientSecret:'8515ca40ec40b58d30e974c8cf2c9f3b',
     callbackURL: "http://localhost:3000//auth/facebook/callback"
   },
   function(accessToken, refreshToken, profile, done) {
-    User.findOrCreate(..., function(err, user) {
-      if (err) { return done(err); }
-      done(null, user);
-    });
+    console.log(profile);
   }
 ));
 

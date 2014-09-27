@@ -13,6 +13,23 @@ var pub = __dirname + '/public';
 var app = express();
 app.use(express.static(pub));
 
+var mongoose = require('mongoose');
+mongoose.connect('mongodb://localhost/booklog2');
+
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function callback () {
+  console.log('MongoDB: connected.');	
+});
+
+var postSchema = new mongoose.Schema({ //宣告Schema
+    subject: { type: String, default: ''},
+    content: String
+});
+
+app.db = {//宣告 model
+	posts: mongoose.model('Post', postSchema)//宣告postSchema為‘Post’如果Schema為Post 的話 collections 就要為	posts
+};
 // Optional since express defaults to CWD/views
 
 app.set('views', __dirname + '/views');
@@ -22,144 +39,130 @@ app.set('views', __dirname + '/views');
 // (although you can still mix and match)
 app.set('view engine', 'jade');
 
-var posts=[{
-	subject:'Hello',
-	content:['1','2','3']
-},{
-	subject:'Hello2',
-	content:'Hi'
+var bodyParser = require('body-parser');
 
-}];
-var count=0;
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
 
 app.all('*', function(req, res, next){
   if (!req.get('Origin')) return next();
   // use "*" here to accept any origin
-  res.set('Access-Control-Allow-Origin', '*');//*可以允許不同網遇的人瀏覽
+  res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'PUT');
-  res.set('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type');//設定http 的擋頭
+  res.set('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type');
   // res.set('Access-Control-Allow-Max-Age', 3600);
   if ('OPTIONS' == req.method) return res.send(200);
   next();
-  
 });
 
-app.get('/welcome',function(req, res){
-	res.render('index');//開啟歡迎畫面 在views 裡的index.js 設定畫面
+app.get('/welcome', function(req, res) {
+	res.render('index');
 });
 
+app.get('/download', function(req, res) {
+	var events = require('events');
+	var workflow = new events.EventEmitter();
 
-app.get('/download',function(req, res){//使用workflow 簡單，明確，快速
-	var events=require('events');
-	var workflow= new events.EventEmitter();
-	
-	workflow.outcome={
-		success:false,
-	}
+	workflow.outcome = {
+		success: false,
+	};
 
-	workflow.on('vaidate',function(){
-		var password=req.query.password;
-		if (password==='12345') {
+	workflow.on('vaidate', function() {
+		var password = req.query.password;
 
+		if (typeof(req.retries) === 'undefined')
+			req.retries = 3;
+
+		if (password === '123456') {
 			return workflow.emit('success');
-		};
+		}
+
 		return workflow.emit('error');
-		
 	});
 
-	workflow.on('success',function(){
-		workflow.outcome.success=true;
-		workflow.outcome.render={
-			url:'/welcome'
+	workflow.on('success', function() {
+		workflow.outcome.success = true;
+		workflow.outcome.redirect = { 
+			url: '/welcome'
 		};
-		res.download('./Users/mac/Desktop/Thumbs.db')
 		workflow.emit('response');
 	});
-	workflow.on('error',function(){
-		workflow.outcome.success=false;
+
+	workflow.on('error', function() {
+		if (req.retries > 0) {
+			req.retries--;
+			workflow.outcome.retries = req.retries;
+			workflow.emit('response');
+		}
+
+		workflow.outcome.success = false;
 		workflow.emit('response');
-		
 	});
 
-		workflow.on('response',function(){
-		
-			if (workflow.outcome===true) {
-				res.send([workflow.outcome,{count:count}]);
-
-			}else{
-				count++
-				if (count>3) {
-
-					res.send('錯了 '+count+' 次');
-				}else{
-
-					res.send([workflow.outcome,{count:count}]);
-				}
-
-			}
-				
-			
-
-		});
-
+	workflow.on('response', function() {
+		return res.send(workflow.outcome);
+	});
 
 	return workflow.emit('vaidate');
 });
 
+app.get('/post', function(req, res) {
+	res.render('post');
+});
 
+app.get('/1/post/:id', function(req, res) {	
+	var id = req.params.id;
+	var posts = req.app.db.model;
 
-app.get('/post',function(req, res){
-	res.render('post',{
-		post:posts//在views 裡的post 設定畫面
+	posts.findOne({_id: id}, function(err, post) {
+		res.send({post: post});	
+	});
+});
 
+app.get('/1/post', function(req, res) {	
+	var posts = req.app.db.posts;
+
+	posts.find(function(err, posts) {
+		res.send({posts: posts});	
 	});
 });
 
 
+app.post('/1/post', function(req, res) {
+	var posts = req.app.db.posts;
 
-
-
-
-app.get('/1/post',function(req, res){
-	res.send(posts);
-});
-
-
-
-app.post('/1/post',function(req, res){
 	var subject;
 	var content;
-	if (typeof(req.body) === 'undefined') {
+
+	if (typeof(req.body.subject) === 'undefined') {
 		subject = req.query.subject;
 		content = req.query.content;
+	} else {
+		subject = req.body.subject;
+		content = req.body.content;		
 	}
 
-	var post={
-		//前面的值為Key 所以不一定要加上“”
-		subject:subject+count,
-		content:content
+	var post = {
+		subject: subject,
+		content: content
 	};
 
-	posts.push(post);
-	//res.send(posts);
-	res.send({status:"OK",posts:posts,count:count});
+	//posts.push(post);
+	var card = new posts(post);//新開一個文件的意思
+	card.save();//存檔，資料內 mongodb 會自動加上一個 _id 為檔名的意思
+
+	res.send({ status: 'OK'});
 });
 
-
-
-app.get('/1/post',function(req, res){
-
+app.delete('/1/post', function(req, res) {
+	res.send("Delete a post");
 });
-app.put('/1/post/:postId',function(req, res){
-	var id=req.params.postId;
-	res.send("Update a post: "+id);
-});
-app.delete('/1/post',function(req, res){
-	var result={
-		title:"Delete",
-		content:"true"
-	};
-	res.send(result);
+
+app.put('/1/post/:postId', function(req, res) {
+	var id = req.params.postId;
+
+	res.send("Update a post: " + id);
 });
 
 // change this to a better error handler in your code

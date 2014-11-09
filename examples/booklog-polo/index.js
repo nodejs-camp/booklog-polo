@@ -86,7 +86,7 @@ passport.deserializeUser(function(obj, done) {
 passport.use(new FacebookStrategy({
     clientID:'257942504414864',
     clientSecret:'8515ca40ec40b58d30e974c8cf2c9f3b',
-    callbackURL: "http://localhost:3000/auth/facebook/callback"
+    callbackURL: "http://polo-booklog.cloudapp.net:3000/auth/facebook/callback"
   },
  function(accessToken, refreshToken, profile, done) {
 	   app.db.users.findOne({"facebook._json.id": profile._json.id}, function(err, user) {

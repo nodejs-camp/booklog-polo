@@ -10,7 +10,7 @@ html
                     span.icon-bar
                     span.icon-bar
                     span.icon-bar
-                  a.navbar-brand(href='#') Start Bootstrap
+                  a.navbar-brand(href='#') Digital Community
                 #bs-example-navbar-collapse-1.collapse.navbar-collapse
                   ul.nav.navbar-nav
                     li
@@ -18,9 +18,14 @@ html
                     li
                       a(href='#') Services
                     li
-                      a(href='#') Contact
-    
+                      a(href='#') Advertising 
+                    li
+                      a(href='/logout')
+                        span.fa.fa-facebook-square &nbsp;Logout
+
+
         block content
+
 
         .container
           hr
@@ -34,5 +39,6 @@ html
 
         script(src='vendor/underscore/underscore-min.js')
         script(src='vendor/backbone/backbone.js')
+        script(src='vendor/moment/moment.js')
 
         block feet
